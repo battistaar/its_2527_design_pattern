@@ -6,6 +6,7 @@ import {
   Get,
   Headers,
   HttpException,
+  Inject,
   NotFoundException,
   Param,
   Post,
@@ -25,6 +26,7 @@ import { round2 } from '../shared/money';
 import { TicketsService } from '../tickets/tickets.service';
 import { CreateOrderDto } from './create-order.dto';
 import { OrderPricer, SeatRequest } from '../pricing/order-pricer';
+import { PRICING_RULES, type PricingRuleMap } from '../pricing/pricing-rule';
 
 @Controller('orders')
 export class OrdersController {
@@ -36,6 +38,7 @@ export class OrdersController {
     private readonly tickets: TicketsRepository,
     private readonly ticketsService: TicketsService,
     private readonly mailer: MailerService,
+    @Inject(PRICING_RULES) private readonly rules: PricingRuleMap
   ) {}
 
   @Post()
@@ -71,8 +74,10 @@ export class OrdersController {
       requests.push({ seat, quantity: qty })
     }
 
-    const { items, total } = new OrderPricer().quote(event, requests);
     
+    const rule = this.rules[event.pricingType];
+    const { items, total } = new OrderPricer(rule).quote(event, requests);
+
     // pagamento
     let charge: AlphaCharge | null = null;
     if (total > 0) {

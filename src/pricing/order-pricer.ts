@@ -1,6 +1,7 @@
 import { BadRequestException } from "@nestjs/common";
 import { EventRecord, OrderItem, Seat } from "../data/types";
 import { round2 } from "../shared/money";
+import { PricingRule } from "./pricing-rule";
 
 export interface SeatRequest {
   seat: Seat;
@@ -13,6 +14,8 @@ export interface Order {
 }
 
 export class OrderPricer {
+
+  constructor(private readonly rule: PricingRule) {}
 
   quote(event: EventRecord, requests: SeatRequest[]): Order {
     const items: OrderItem[] = requests.map(request => this.line(event, request.seat, request.quantity));
@@ -53,15 +56,6 @@ export class OrderPricer {
   }
   
   private unitPrice(event: EventRecord, seat: Seat): number {
-    switch (event.pricingType) {
-      case 'standard':
-        return event.sectorPrices[seat.sector];
-      case 'flat':
-        return event.flatPrice!;
-      case 'free':
-        return 0;
-      default:
-        throw new BadRequestException('tipo di prezzo non gestito');
-    }
+    return this.rule.unitPrice({ event, seat });
   }
 }
