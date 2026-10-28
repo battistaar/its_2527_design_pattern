@@ -18,17 +18,13 @@ Poi apri http://localhost:3000/events.
 
 ## Come si lavora sui ticket
 
-All'apertura di un ticket, un ramo per coppia a partire da `develop`:
+I ticket sono le issue del repository su GitHub, nella scheda Issues. All'apertura di una issue, crea un tuo ramo a partire da `develop`:
 
 ```bash
-git switch develop && git pull && git switch -c t01-cognome1-cognome2
+git switch develop && git pull && git switch -c <nome-del-ramo>
 ```
 
-Quando arriva la variazione del ticket, sul tuo ramo:
-
-```bash
-git pull origin develop
-```
+Il ramo resta sul tuo computer: non si pusha. Se durante il lavoro arriva una nuova issue che segue la precedente, continua sullo stesso ramo.
 
 Fai commit spesso sul tuo ramo. A fine ticket la soluzione costruita in classe arriva su `develop` e il giro ricomincia.
 

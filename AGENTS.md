@@ -38,7 +38,6 @@ Il codice ha qualche anno e diversi problemi noti, elencati in `DEBITO.md`. Le r
 - `src/data/`: tipi del dominio, seed e repository in memoria.
 - `vendor/`: SDK dei fornitori esterni (pagamenti, tornelli, feed dei promoter). Non si modifica. Se un SDK non fa quello che serve, si scrive codice nostro attorno.
 - `test/`: test e2e.
-- `tickets/`: i ticket di lavoro, uno per file.
 - `DEBITO.md`: il registro dei problemi noti del codice.
 
 ## Convenzioni
@@ -53,7 +52,7 @@ Il codice ha qualche anno e diversi problemi noti, elencati in `DEBITO.md`. Le r
 
 - TDD: prima un test che fallisce, poi il codice minimo per farlo passare, poi il refactoring con i test verdi.
 - Commit piccoli: ogni commit lascia verdi `npm test` e `npm run test:e2e`.
-- Lo scope è il ticket in `tickets/`. Niente refactoring del codice che il ticket non tocca: se trovi un problema fuori scope, aggiungi una riga a `DEBITO.md` e vai avanti.
+- Lo scope è la issue GitHub su cui si lavora. Se non hai il testo, chiedilo o leggilo con `gh issue view <numero>`. Niente refactoring del codice che il ticket non tocca: se trovi un problema fuori scope, aggiungi una riga a `DEBITO.md` e vai avanti.
 - Niente astrazioni che il ticket non richiede. Un'interfaccia con una sola implementazione deve avere un motivo scritto nel ticket.
 - Niente dipendenze npm nuove senza chiedere.
 - I test esistenti non si modificano per farli passare. Se un test descrive un comportamento che il ticket chiede di cambiare, dillo esplicitamente.
