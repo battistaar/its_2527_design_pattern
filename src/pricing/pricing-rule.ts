@@ -8,7 +8,3 @@ export interface PriceContext {
 export interface PricingRule {
     unitPrice(ctx: PriceContext): number;
 }
-
-export const PRICING_RULES = 'PRICING_RULES';
-
-export type PricingRuleMap = Record<PricingType, PricingRule>;

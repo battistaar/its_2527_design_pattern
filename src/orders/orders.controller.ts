@@ -5,28 +5,25 @@ import {
   Controller,
   Get,
   Headers,
-  HttpException,
-  Inject,
-  NotFoundException,
+  HttpException, NotFoundException,
   Param,
   Post,
-  ServiceUnavailableException,
+  ServiceUnavailableException
 } from '@nestjs/common';
 import { ApiHeader } from '@nestjs/swagger';
 import { type AlphaCharge, AlphaPayClient, AlphaTimeoutError } from '../../vendor/alpha-pay';
 import { EventsRepository } from '../data/events.repository';
 import { OrdersRepository } from '../data/orders.repository';
 import { TicketsRepository } from '../data/tickets.repository';
-import type { Order, OrderItem } from '../data/types';
+import type { Order } from '../data/types';
 import { UsersRepository } from '../data/users.repository';
 import { VenuesRepository } from '../data/venues.repository';
 import { SeatInventory } from '../inventory/seat-inventory';
 import { MailerService } from '../notifications/mailer.service';
-import { round2 } from '../shared/money';
 import { TicketsService } from '../tickets/tickets.service';
 import { CreateOrderDto } from './create-order.dto';
 import { OrderPricer, SeatRequest } from '../pricing/order-pricer';
-import { PRICING_RULES, type PricingRuleMap } from '../pricing/pricing-rule';
+import { PricingRuleRegistry } from '../pricing/pricing-rules-registry';
 
 @Controller('orders')
 export class OrdersController {
@@ -38,7 +35,7 @@ export class OrdersController {
     private readonly tickets: TicketsRepository,
     private readonly ticketsService: TicketsService,
     private readonly mailer: MailerService,
-    @Inject(PRICING_RULES) private readonly rules: PricingRuleMap
+    private readonly ruleRegistry: PricingRuleRegistry
   ) {}
 
   @Post()
@@ -75,7 +72,7 @@ export class OrdersController {
     }
 
     
-    const rule = this.rules[event.pricingType];
+    const rule = this.ruleRegistry.forEvent(event);
     const { items, total } = new OrderPricer(rule).quote(event, requests);
 
     // pagamento
