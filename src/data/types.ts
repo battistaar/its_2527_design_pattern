@@ -31,6 +31,7 @@ export interface EventRecord {
   pricingType: PricingType;
   sectorPrices: Record<string, number>;
   flatPrice?: number;
+  earlyBird?: {tickets: number, discount: number};
 }
 
 export interface User {
