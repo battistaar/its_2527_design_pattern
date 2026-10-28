@@ -24,6 +24,7 @@ import { MailerService } from '../notifications/mailer.service';
 import { round2 } from '../shared/money';
 import { TicketsService } from '../tickets/tickets.service';
 import { CreateOrderDto } from './create-order.dto';
+import { OrderPricer, SeatRequest } from '../pricing/order-pricer';
 
 @Controller('orders')
 export class OrdersController {
@@ -54,7 +55,7 @@ export class OrdersController {
     if (!body.seats || body.seats.length === 0) throw new BadRequestException('nessun posto selezionato');
 
     const inventory = SeatInventory.getInstance();
-    const items: OrderItem[] = [];
+    const requests: SeatRequest[] = [];
     for (const requested of body.seats) {
       const seat = venue.seats.find((s) => s.id === requested.seatId);
       if (!seat) throw new BadRequestException('posto inesistente: ' + requested.seatId);
@@ -67,36 +68,11 @@ export class OrdersController {
           throw new ConflictException('settore esaurito: ' + seat.sector);
         }
       }
-
-      // calcolo del prezzo
-      let unitPrice = 0;
-      switch (event.pricingType) {
-        case 'standard':
-          unitPrice = event.sectorPrices[seat.sector];
-          break;
-        case 'flat':
-          unitPrice = event.flatPrice!;
-          break;
-        case 'free':
-          unitPrice = 0;
-          break;
-        default:
-          throw new BadRequestException('tipo di prezzo non gestito');
-      }
-      const fee = round2(unitPrice * 0.12);
-      let lineTotal: number;
-      if (seat.kind === 'standing') {
-        // per i posti in piedi la commissione si calcola direttamente sul totale, il risultato è lo stesso
-        lineTotal = round2(unitPrice * qty * 1.12);
-      } else {
-        lineTotal = round2(unitPrice + fee);
-      }
-      items.push({ seatId: seat.id, sector: seat.sector, quantity: qty, unitPrice, fee, lineTotal });
+      requests.push({ seat, quantity: qty })
     }
-    let total = 0;
-    for (const it of items) total += it.lineTotal;
-    total = round2(total);
 
+    const { items, total } = new OrderPricer().quote(event, requests);
+    
     // pagamento
     let charge: AlphaCharge | null = null;
     if (total > 0) {
