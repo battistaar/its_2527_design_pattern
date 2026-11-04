@@ -22,4 +22,8 @@ export class TicketsRepository {
   findByOrder(orderId: string): Ticket[] {
     return [...this.tickets.values()].filter((t) => t.orderId === orderId);
   }
+
+  countByEvent(eventId: string): number {
+    return [...this.tickets.values()].filter((t) => t.eventId === eventId).length;
+  }
 }
