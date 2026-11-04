@@ -13,6 +13,7 @@ export class EventsController {
     private readonly eventsService: EventsService,
     private readonly events: EventsRepository,
     private readonly venues: VenuesRepository,
+    private readonly inventory: SeatInventory
   ) {}
 
   @Get()
@@ -36,16 +37,16 @@ export class EventsController {
     const event = this.events.findById(id);
     if (!event) throw new NotFoundException('evento non trovato');
     const venue = this.venues.findById(event.venueId)!;
-    const inventory = SeatInventory.getInstance();
+
     let total = 0;
     let free = 0;
     for (const s of venue.seats) {
       if (s.kind === 'numbered') {
         total += 1;
-        if (!inventory.isSold(event.id, s.id)) free += 1;
+        if (!this.inventory.isSold(event.id, s.id)) free += 1;
       } else if (s.kind === 'standing') {
         total += s.capacity!;
-        free += s.capacity! - inventory.standingSold(event.id, s.id);
+        free += s.capacity! - this.inventory.standingSold(event.id, s.id);
       }
     }
     const data = {

@@ -24,6 +24,6 @@ import { VenuesModule } from './venues/venues.module';
     GatesModule,
     ImportsModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController]
 })
 export class AppModule {}
