@@ -1,7 +1,8 @@
+import { PdfLite } from '../../vendor/pdf-lite';
 import type { EventRecord, Ticket, Venue } from '../data/types';
 
 export interface TicketRenderer {
-  render(ticket: Ticket): string;
+  render(ticket: Ticket): string | Buffer;
 }
 
 export class HtmlTicketRenderer implements TicketRenderer {
@@ -9,7 +10,7 @@ export class HtmlTicketRenderer implements TicketRenderer {
     private readonly event: EventRecord,
     private readonly venue: Venue,
   ) {}
-
+  
   render(ticket: Ticket): string {
     const place = ticket.row !== null ? `Fila ${ticket.row} Posto ${ticket.number}` : 'Posto unico';
     return [
@@ -32,7 +33,7 @@ export class TextTicketRenderer implements TicketRenderer {
     private readonly event: EventRecord,
     private readonly venue: Venue,
   ) {}
-
+  
   render(ticket: Ticket): string {
     const place = ticket.row !== null ? `FILA ${ticket.row} POSTO ${ticket.number}` : 'POSTO UNICO';
     return [
@@ -45,5 +46,56 @@ export class TextTicketRenderer implements TicketRenderer {
       `EUR ${ticket.price.toFixed(2)}`,
       ticket.code,
     ].join('\n');
+  }
+}
+
+// pdf-lite scrive solo latin1: niente simbolo dell'euro
+export class PdfTicketRenderer implements TicketRenderer {
+  constructor(
+    private readonly event: EventRecord,
+    private readonly venue: Venue,
+  ) {}
+  
+  render(ticket: Ticket): Buffer {
+    const place = ticket.row !== null ? `Fila ${ticket.row} Posto ${ticket.number}` : 'Posto unico';
+    return new PdfLite()
+    .text('TicketHub')
+    .text(this.event.title)
+    .text(`${this.venue.name}, ${this.venue.city}`)
+    .text(this.event.date)
+    .text(`Settore ${ticket.sector} - ${place}`)
+    .text(`Intestato a ${ticket.holderName}`)
+    .text(`EUR ${ticket.price.toFixed(2)}`)
+    .text(`Codice: ${ticket.code}`)
+    .toBuffer();
+  }
+}
+
+// pass per il wallet del telefono, letto dall'app mobile
+export class WalletTicketRenderer implements TicketRenderer {
+  constructor(
+    private readonly event: EventRecord,
+    private readonly venue: Venue,
+  ) {}
+  
+  render(ticket: Ticket): string {
+    const place = ticket.row !== null ? `Fila ${ticket.row} Posto ${ticket.number}` : 'Posto unico';
+    return JSON.stringify({
+      eventTitle: this.event.title,
+      venue: `${this.venue.name}, ${this.venue.city}`,
+      date: this.event.date,
+      seat: `${ticket.sector} ${place}`,
+      holder: ticket.holderName,
+      barcode: ticket.code,
+    });
+  }
+}
+
+// SMS per chi compra in cassa: al massimo 160 caratteri
+export class QrTicketRenderer implements TicketRenderer {
+  constructor(private readonly event: EventRecord) {}
+  
+  render(ticket: Ticket): string {
+    return `TicketHub ${this.event.title.slice(0, 80)} ${this.event.date} ${ticket.code}`;
   }
 }
