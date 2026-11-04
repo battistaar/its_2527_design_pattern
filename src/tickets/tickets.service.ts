@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { EventsRepository } from '../data/events.repository';
 import { TicketsRepository } from '../data/tickets.repository';
 import type { Order, Ticket, Venue } from '../data/types';
 import { VenuesRepository } from '../data/venues.repository';
 import { round2 } from '../shared/money';
 import { HtmlTicketRenderer, TextTicketRenderer } from './renderers';
+import { TICKET_FORMATS, TicketFile, TicketFormat, type TicketFormats } from './ticket-formats';
 
 export function checksum(id: string): string {
   let sum = 0;
@@ -12,11 +13,7 @@ export function checksum(id: string): string {
   return String(sum % 97).padStart(2, '0');
 }
 
-export interface TicketFile {
-  body: string;
-  contentType: string;
-  filename: string;
-}
+
 
 @Injectable()
 export class TicketsService {
@@ -24,6 +21,7 @@ export class TicketsService {
     private readonly tickets: TicketsRepository,
     private readonly events: EventsRepository,
     private readonly venues: VenuesRepository,
+    @Inject(TICKET_FORMATS) private readonly formats: TicketFormats
   ) {}
 
   createForOrder(order: Order, venue: Venue): Ticket[] {
@@ -53,27 +51,17 @@ export class TicketsService {
   }
 
   render(ticket: Ticket, format: string): string {
-    return this.download(ticket, format).body;
+    return this.download(ticket, format).body.toString();
   }
+  
   download(ticket: Ticket, format: string): TicketFile {
+    const ticketFormat = this.formats[format];
+    if (!ticketFormat) {
+      throw new BadRequestException('formato non supportato');
+    }
     const event = this.events.findById(ticket.eventId)!;
     const venue = this.venues.findById(event.venueId)!;
-    switch (format) {
-      case 'html':
-        return {
-          body: new HtmlTicketRenderer(event, venue).render(ticket),
-          contentType: 'text/html; charset=utf-8',
-          filename: `biglietto-${ticket.id}.html`
-        };
-      case 'text':
-        return {
-          body: new TextTicketRenderer(event, venue).render(ticket),
-          contentType: 'text/plain; charset=utf-8',
-          filename: `biglietto-${ticket.id}.txt`
-        };
-      default:
-        throw new BadRequestException('formato non supportato: ' + format);
-    }
+    return ticketFormat.produce(ticket, event, venue);
   }
 
   // vecchia versione con il QR, tenuta nel caso tornasse utile
