@@ -59,7 +59,7 @@ export function seedEvents(): EventRecord[] {
       promoter: 'B',
       organizerId: 'u-org-2',
       status: 'on_sale',
-      pricingType: 'standard',
+      pricingType: 'dynamic',
       sectorPrices: { PLATEA: 45, GALLERIA: 25 },
     },
     {
