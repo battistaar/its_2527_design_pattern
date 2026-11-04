@@ -29,7 +29,7 @@ export class TicketsController {
         extension = 'html';
         break;
       case 'text':
-        body = new TextTicketRenderer(event, venue).print(ticket);
+        body = new TextTicketRenderer(event, venue).render(ticket);
         contentType = 'text/plain; charset=utf-8';
         extension = 'txt';
         break;
