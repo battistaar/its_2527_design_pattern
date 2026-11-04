@@ -12,6 +12,12 @@ export function checksum(id: string): string {
   return String(sum % 97).padStart(2, '0');
 }
 
+export interface TicketFile {
+  body: string;
+  contentType: string;
+  filename: string;
+}
+
 @Injectable()
 export class TicketsService {
   constructor(
@@ -47,13 +53,24 @@ export class TicketsService {
   }
 
   render(ticket: Ticket, format: string): string {
+    return this.download(ticket, format).body;
+  }
+  download(ticket: Ticket, format: string): TicketFile {
     const event = this.events.findById(ticket.eventId)!;
     const venue = this.venues.findById(event.venueId)!;
     switch (format) {
       case 'html':
-        return new HtmlTicketRenderer(event, venue).render(ticket);
+        return {
+          body: new HtmlTicketRenderer(event, venue).render(ticket),
+          contentType: 'text/html; charset=utf-8',
+          filename: `biglietto-${ticket.id}.html`
+        };
       case 'text':
-        return new TextTicketRenderer(event, venue).print(ticket);
+        return {
+          body: new TextTicketRenderer(event, venue).render(ticket),
+          contentType: 'text/plain; charset=utf-8',
+          filename: `biglietto-${ticket.id}.txt`
+        };
       default:
         throw new BadRequestException('formato non supportato: ' + format);
     }
