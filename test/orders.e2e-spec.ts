@@ -24,19 +24,19 @@ describe('Ordini', () => {
 
   it('vende un posto numerato e addebita prezzo più commissione', async () => {
     const res = await buy({ eventId: 'e-1', seats: [{ seatId: 'A-1-1' }] }).expect(201);
-    expect(res.body.order.total).toBe(78.29);
+    expect(res.body.order.total).toBe(62.63);
     expect(res.body.order.status).toBe('paid');
     expect(res.body.order.alphaChargeId).toMatch(/^ch_\d{6}$/);
     expect(res.body.tickets).toHaveLength(1);
-    expect(res.body.tickets[0].price).toBe(78.29);
+    expect(res.body.tickets[0].price).toBe(62.63);
     expect(res.body.tickets[0].code).toMatch(/^TH\|t-1\|\d{2}$/);
   });
 
   it('vende posti in piedi a quantità', async () => {
     const res = await buy({ eventId: 'e-1', seats: [{ seatId: 'PIT', quantity: 2 }] }).expect(201);
-    expect(res.body.order.total).toBe(111.78);
+    expect(res.body.order.total).toBe(89.42);
     expect(res.body.tickets).toHaveLength(2);
-    expect(res.body.tickets.map((t: { price: number }) => t.price)).toEqual([55.89, 55.89]);
+    expect(res.body.tickets.map((t: { price: number }) => t.price)).toEqual([44.71, 44.71]);
   });
 
   it('non vende due volte lo stesso posto numerato', async () => {

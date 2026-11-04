@@ -16,7 +16,7 @@ export interface Venue {
   seats: Seat[];
 }
 
-export type PricingType = 'standard' | 'flat' | 'free';
+export type PricingType = 'standard' | 'flat' | 'free' | 'early_bird';
 
 export type EventStatus = 'draft' | 'on_sale' | 'cancelled';
 

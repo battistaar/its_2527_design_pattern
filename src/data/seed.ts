@@ -47,8 +47,9 @@ export function seedEvents(): EventRecord[] {
       promoter: 'A',
       organizerId: 'u-org-1',
       status: 'on_sale',
-      pricingType: 'standard',
+      pricingType: 'early_bird',
       sectorPrices: { PIT: 49.9, A: 69.9, B: 39.9 },
+      earlyBird: { tickets: 500, discount: 0.2 }
     },
     {
       id: 'e-2',

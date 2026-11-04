@@ -26,9 +26,9 @@ describe('Eventi', () => {
       date: '2027-06-12T21:00:00+02:00',
       venue: 'Arena Nord',
       city: 'Verona',
-      priceFrom: '44.69',
+      priceFrom: '35.75',
     });
-    expect(res.body.map((e: { priceFrom: string }) => e.priceFrom)).toEqual(['44.69', '28.00', '0.00', '20.16']);
+    expect(res.body.map((e: { priceFrom: string }) => e.priceFrom)).toEqual(['35.75', '28.00', '0.00', '20.16']);
   });
 
   it('mostra il dettaglio di un evento con la disponibilità', async () => {
