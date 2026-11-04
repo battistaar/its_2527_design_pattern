@@ -1,4 +1,3 @@
-import { BadRequestException } from "@nestjs/common";
 import { EventRecord, OrderItem, Seat } from "../data/types";
 import { round2 } from "../shared/money";
 import { PricingRule } from "./pricing-rule";
@@ -18,7 +17,29 @@ export class OrderPricer {
   constructor(private readonly rule: PricingRule) {}
 
   quote(event: EventRecord, requests: SeatRequest[]): Order {
-    const items: OrderItem[] = requests.map(request => this.line(event, request.seat, request.quantity));
+    const items: OrderItem[] = [];
+
+    for (const { seat, quantity } of requests) {
+      // per ogni posto richiesto, se supero la soglia devo creare due oggetti in items
+
+      const prices: { unitPrice: number, quantity: number }[] = [];
+
+      for (let i = 0; i < quantity; i++) {
+        const unitPrice = this.unitPrice(event, seat);
+        const last = prices[prices.length -1];
+
+        // se diverso da quello precedente, creo nuova riga
+        if (last && last.unitPrice === unitPrice) {
+          last.quantity++;
+        } else {
+          prices.push({ unitPrice, quantity: 1 });
+        }
+      }
+
+      for (const price of prices) {
+        items.push(this.line(seat, price.unitPrice, price.quantity));
+      }
+    }
 
     let total = items.reduce((tot, curr) => tot + curr.lineTotal, 0);
     total = round2(total);
@@ -28,10 +49,7 @@ export class OrderPricer {
     }
   }
 
-  private line(event: EventRecord, seat: Seat, quantity: number): OrderItem {
-    // calcolo del prezzo
-    let unitPrice = this.unitPrice(event, seat);
-
+  private line(seat: Seat, unitPrice: number, quantity: number): OrderItem {
     const fee = round2(unitPrice * 0.12);
     let lineTotal: number;
     if (seat.kind === 'standing') {
