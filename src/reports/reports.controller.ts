@@ -10,6 +10,7 @@ export class ReportsController {
     private readonly events: EventsRepository,
     private readonly venues: VenuesRepository,
     private readonly orders: OrdersRepository,
+    private readonly inventory: SeatInventory
   ) {}
 
   @Get(':id/revenue')
@@ -40,7 +41,7 @@ export class ReportsController {
     return {
       eventId: id,
       ticketsSold: tickets,
-      soldFromInventory: SeatInventory.getInstance().soldCount(id),
+      soldFromInventory: this.inventory.soldCount(id),
       revenue: Math.round(total * 100) / 100,
       bySector,
     };

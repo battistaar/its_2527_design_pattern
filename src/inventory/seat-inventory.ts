@@ -1,20 +1,14 @@
 // Tiene traccia dei posti venduti per ogni evento.
 // C'è una sola istanza per tutta l'applicazione, così ordini, mappa e report
+
+import { Injectable } from "@nestjs/common";
+
 // vedono sempre gli stessi dati.
+@Injectable()
 export class SeatInventory {
-  private static instance: SeatInventory | undefined;
 
   private readonly soldSeats = new Map<string, Set<string>>();
   private readonly standing = new Map<string, Map<string, number>>();
-
-  private constructor() {}
-
-  static getInstance(): SeatInventory {
-    if (!SeatInventory.instance) {
-      SeatInventory.instance = new SeatInventory();
-    }
-    return SeatInventory.instance;
-  }
 
   isSold(eventId: string, seatId: string): boolean {
     return this.soldSeats.get(eventId)?.has(seatId) ?? false;

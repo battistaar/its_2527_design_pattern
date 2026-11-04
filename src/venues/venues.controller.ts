@@ -19,6 +19,7 @@ export class VenuesController {
   constructor(
     private readonly venues: VenuesRepository,
     private readonly events: EventsRepository,
+    private readonly inventory: SeatInventory
   ) {}
 
   @Get(':id/map')
@@ -34,7 +35,7 @@ export class VenuesController {
     if (!event || event.venueId !== venue.id) {
       throw new BadRequestException('evento non valido per questo locale');
     }
-    const inventory = SeatInventory.getInstance();
+    
     const sectors: Record<string, SectorMap> = {};
     for (const s of venue.seats) {
       if (!sectors[s.sector]) {
@@ -42,13 +43,13 @@ export class VenuesController {
       }
       const sec = sectors[s.sector];
       if (s.kind === 'numbered') {
-        const isFree = !inventory.isSold(event.id, s.id);
+        const isFree = !this.inventory.isSold(event.id, s.id);
         sec.total += 1;
         if (isFree) sec.free += 1;
         sec.seats.push({ id: s.id, row: s.row!, number: s.number!, free: isFree });
       } else if (s.kind === 'standing') {
         sec.total += s.capacity!;
-        sec.free += s.capacity! - inventory.standingSold(event.id, s.id);
+        sec.free += s.capacity! - this.inventory.standingSold(event.id, s.id);
       }
     }
     const data = { venueId: venue.id, eventId: event.id, sectors: Object.values(sectors) };

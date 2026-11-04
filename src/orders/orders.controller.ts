@@ -35,7 +35,8 @@ export class OrdersController {
     private readonly tickets: TicketsRepository,
     private readonly ticketsService: TicketsService,
     private readonly mailer: MailerService,
-    private readonly ruleRegistry: PricingRuleRegistry
+    private readonly ruleRegistry: PricingRuleRegistry,
+    private readonly inventory: SeatInventory
   ) {}
 
   @Post()
@@ -54,17 +55,16 @@ export class OrdersController {
     if (!email) throw new BadRequestException('email obbligatoria');
     if (!body.seats || body.seats.length === 0) throw new BadRequestException('nessun posto selezionato');
 
-    const inventory = SeatInventory.getInstance();
     const requests: SeatRequest[] = [];
     for (const requested of body.seats) {
       const seat = venue.seats.find((s) => s.id === requested.seatId);
       if (!seat) throw new BadRequestException('posto inesistente: ' + requested.seatId);
       let qty = 1;
       if (seat.kind === 'numbered') {
-        if (inventory.isSold(event.id, seat.id)) throw new ConflictException('posto già venduto: ' + seat.id);
+        if (this.inventory.isSold(event.id, seat.id)) throw new ConflictException('posto già venduto: ' + seat.id);
       } else if (seat.kind === 'standing') {
         qty = requested.quantity ?? 1;
-        if (inventory.standingSold(event.id, seat.id) + qty > seat.capacity!) {
+        if (this.inventory.standingSold(event.id, seat.id) + qty > seat.capacity!) {
           throw new ConflictException('settore esaurito: ' + seat.sector);
         }
       }
@@ -106,9 +106,9 @@ export class OrdersController {
     for (const it of items) {
       const seat = venue.seats.find((s) => s.id === it.seatId)!;
       if (seat.kind === 'numbered') {
-        inventory.markSold(event.id, seat.id);
+        this.inventory.markSold(event.id, seat.id);
       } else {
-        inventory.addStanding(event.id, seat.id, it.quantity);
+        this.inventory.addStanding(event.id, seat.id, it.quantity);
       }
     }
 
@@ -170,13 +170,12 @@ export class OrdersController {
       if (!done) throw new ServiceUnavailableException('rimborso non riuscito');
     }
 
-    const inventory = SeatInventory.getInstance();
     for (const it of order.items) {
       const seat = venue.seats.find((s) => s.id === it.seatId)!;
       if (seat.kind === 'numbered') {
-        inventory.release(event.id, seat.id);
+        this.inventory.release(event.id, seat.id);
       } else {
-        inventory.removeStanding(event.id, seat.id, it.quantity);
+        this.inventory.removeStanding(event.id, seat.id, it.quantity);
       }
     }
     for (const t of this.tickets.findByOrder(order.id)) {

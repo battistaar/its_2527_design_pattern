@@ -81,4 +81,16 @@ describe('Ordini', () => {
     expect(detail.body.tickets.map((t: { status: string }) => t.status)).toEqual(['void']);
     await buy({ eventId: 'e-1', seats: [{ seatId: 'A-5-1' }] }).expect(201);
   });
+
+  const order = { eventId: 'e-1', seats: [{ seatId: 'A-1-1' }], card: GOOD_CARD, holderName: 'Ada', email: 'ada@example.com' };
+
+  it("un'applicazione appena creata parte con tutti i posti liberi", async () => {
+    const first = await createApp();
+    await request(first.getHttpServer()).post('/orders').send(order).expect(201);
+    await first.close();
+
+    const second = await createApp();
+    await request(second.getHttpServer()).post('/orders').send(order).expect(201);
+    await second.close();
+  });
 });

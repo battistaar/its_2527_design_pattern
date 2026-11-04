@@ -38,7 +38,10 @@ export class EarlyBirdPricing implements PricingRule {
 }
 
 export class DynamicPricing implements PricingRule {
-    constructor(private readonly venues: VenuesRepository) {}
+    constructor(
+        private readonly venues: VenuesRepository,
+        private readonly inventory: SeatInventory
+    ) {}
 
     unitPrice({ event, seat }: PriceContext): number {
         const price = event.sectorPrices[seat.sector];
@@ -50,8 +53,6 @@ export class DynamicPricing implements PricingRule {
     }
 
     private sectorAvailability(event: EventRecord, seat: Seat): { total: number, free: number} {
-        const inventory = SeatInventory.getInstance();
-
         const venue = this.venues.findById(event.venueId);
 
         const seats: Seat[] = venue?.seats.filter(s => s.sector === seat.sector)!;
@@ -60,10 +61,10 @@ export class DynamicPricing implements PricingRule {
         for (const s of seats) {
             if (s.kind === 'standing') {
                 total += s.capacity!;
-                free += s.capacity! - inventory.standingSold(event.id, s.id);
+                free += s.capacity! - this.inventory.standingSold(event.id, s.id);
             } else {
                 total += 1;
-                if (!inventory.isSold(event.id, s.id)) {
+                if (!this.inventory.isSold(event.id, s.id)) {
                     free += 1;
                 }
             }
