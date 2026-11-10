@@ -24,7 +24,7 @@ export class AlphaWebhookController {
     if (!signature || !AlphaWebhook.verify(event, signature, secret)) {
       throw new UnauthorizedException('firma non valida');
     }
-    const order = this.orders.findByAlphaChargeId(event.chargeId);
+    const order = this.orders.findByPaymentId(event.chargeId);
     if (!order) return { received: true, matched: false };
     if (event.type === 'charge.refunded') {
       order.status = 'refunded';

@@ -26,7 +26,7 @@ describe('Ordini', () => {
     const res = await buy({ eventId: 'e-1', seats: [{ seatId: 'A-1-1' }] }).expect(201);
     expect(res.body.order.total).toBe(62.63);
     expect(res.body.order.status).toBe('paid');
-    expect(res.body.order.alphaChargeId).toMatch(/^ch_\d{6}$/);
+    expect(res.body.order.paymentId).toMatch(/^ch_\d{6}$/);
     expect(res.body.tickets).toHaveLength(1);
     expect(res.body.tickets[0].price).toBe(62.63);
     expect(res.body.tickets[0].code).toMatch(/^TH\|t-1\|\d{2}$/);
@@ -57,7 +57,7 @@ describe('Ordini', () => {
   it('non addebita nulla per un evento gratuito', async () => {
     const res = await buy({ eventId: 'e-3', seats: [{ seatId: 'PIT', quantity: 1 }] }).expect(201);
     expect(res.body.order.total).toBe(0);
-    expect(res.body.order.alphaChargeId).toBeNull();
+    expect(res.body.order.paymentId).toBeNull();
   });
 
   it('rifiuta un evento che non è in vendita', async () => {

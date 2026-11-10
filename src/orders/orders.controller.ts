@@ -5,13 +5,12 @@ import {
   Controller,
   Get,
   Headers,
-  HttpException, NotFoundException,
+  HttpException, Inject, NotFoundException,
   Param,
   Post,
   ServiceUnavailableException
 } from '@nestjs/common';
 import { ApiHeader } from '@nestjs/swagger';
-import { type AlphaCharge, AlphaPayClient, AlphaTimeoutError } from '../../vendor/alpha-pay';
 import { EventsRepository } from '../data/events.repository';
 import { OrdersRepository } from '../data/orders.repository';
 import { TicketsRepository } from '../data/tickets.repository';
@@ -24,6 +23,7 @@ import { TicketsService } from '../tickets/tickets.service';
 import { CreateOrderDto } from './create-order.dto';
 import { OrderPricer, SeatRequest } from '../pricing/order-pricer';
 import { PricingRuleRegistry } from '../pricing/pricing-rules-registry';
+import { Payment, PAYMENT_GATEWAY, PaymentTimeoutError, type PaymentGateway } from '../payments/payment-gateway';
 
 @Controller('orders')
 export class OrdersController {
@@ -36,7 +36,8 @@ export class OrdersController {
     private readonly ticketsService: TicketsService,
     private readonly mailer: MailerService,
     private readonly ruleRegistry: PricingRuleRegistry,
-    private readonly inventory: SeatInventory
+    private readonly inventory: SeatInventory,
+    @Inject(PAYMENT_GATEWAY) private readonly payments: PaymentGateway
   ) {}
 
   @Post()
@@ -76,31 +77,26 @@ export class OrdersController {
     const { items, total } = new OrderPricer(rule).quote(event, requests);
 
     // pagamento
-    let charge: AlphaCharge | null = null;
+    let charge: Payment | null = null;
     if (total > 0) {
-      const alpha = new AlphaPayClient(process.env.ALPHA_API_KEY ?? 'sk_test_tickethub');
       const reference = `TH-${event.id}-${Date.now()}`;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          console.log(`[alpha] addebito tentativo ${attempt} ${reference} ${total}`);
-          charge = await alpha.charge({
-            amountCents: Math.round(total * 100),
-            currency: 'EUR',
-            reference,
-            card: body.card,
-          });
-          console.log(`[alpha] esito ${charge.status} ${charge.chargeId}`);
+          console.log(`[payment] addebito tentativo ${attempt} ${reference} ${total}`);
+          charge = await this.payments.charge(total, reference, body.card);
+
+          console.log(`[payment] esito ${charge.approved ? 'approvato' : 'rifiutato'} ${charge.id}`);
           break;
         } catch (err) {
-          if (err instanceof AlphaTimeoutError && attempt < 3) {
-            console.log('[alpha] timeout, riprovo');
+          if (err instanceof PaymentTimeoutError && attempt < 3) {
+            console.log('[payment] timeout, riprovo');
             continue;
           }
-          console.log('[alpha] errore', err);
+          console.log('[payment] errore', err);
           throw new ServiceUnavailableException('servizio di pagamento non disponibile');
         }
       }
-      if (charge!.status === 'declined') throw new HttpException('pagamento rifiutato', 402);
+      if (!charge!.approved) throw new HttpException('pagamento rifiutato', 402);
     }
 
     for (const it of items) {
@@ -121,7 +117,7 @@ export class OrdersController {
       items,
       total,
       status: 'paid',
-      alphaChargeId: charge ? charge.chargeId : null,
+      paymentId: charge ? charge.id : null,
       createdAt: new Date().toISOString(),
     };
     this.orders.save(order);
@@ -151,17 +147,16 @@ export class OrdersController {
     const event = this.events.findById(order.eventId)!;
     const venue = this.venues.findById(event.venueId)!;
 
-    if (order.alphaChargeId) {
-      const client = new AlphaPayClient(process.env.ALPHA_API_KEY ?? 'sk_test_tickethub');
+    if (order.paymentId) {
       let done = false;
       for (let attempt = 1; attempt <= 2 && !done; attempt++) {
         try {
-          console.log(`[alpha] rimborso tentativo ${attempt} ${order.alphaChargeId}`);
-          await client.refund(order.alphaChargeId, Math.round(order.total * 100));
+          console.log(`[payment] rimborso tentativo ${attempt} ${order.paymentId}`);
+          await this.payments.refund(order.paymentId, order.total);
           done = true;
         } catch (err) {
-          if (err instanceof AlphaTimeoutError) {
-            console.log('[alpha] timeout rimborso');
+          if (err instanceof PaymentTimeoutError) {
+            console.log('[payment] timeout rimborso');
             continue;
           }
           throw new ServiceUnavailableException('rimborso non riuscito');

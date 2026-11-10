@@ -61,7 +61,7 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: OrderStatus;
-  alphaChargeId: string | null;
+  paymentId: string | null;
   createdAt: string;
 }
 
