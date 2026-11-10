@@ -4,13 +4,15 @@ import { TicketsModule } from '../tickets/tickets.module';
 import { OrdersController } from './orders.controller';
 import { PricingModule } from '../pricing/pricing.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { PaymentsModule } from '../payments/payments.module';
 
 @Module({
   imports: [
     TicketsModule,
     NotificationsModule,
     PricingModule,
-    InventoryModule
+    InventoryModule,
+    PaymentsModule
   ],
   controllers: [OrdersController]
 })

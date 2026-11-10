@@ -23,7 +23,7 @@ export class OrdersRepository {
     return [...this.orders.values()].filter((o) => o.eventId === eventId);
   }
 
-  findByAlphaChargeId(chargeId: string): Order | undefined {
-    return [...this.orders.values()].find((o) => o.alphaChargeId === chargeId);
+  findByPaymentId(chargeId: string): Order | undefined {
+    return [...this.orders.values()].find((o) => o.paymentId === chargeId);
   }
 }
