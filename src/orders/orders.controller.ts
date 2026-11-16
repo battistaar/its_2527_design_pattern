@@ -80,21 +80,11 @@ export class OrdersController {
     let charge: Payment | null = null;
     if (total > 0) {
       const reference = `TH-${event.id}-${Date.now()}`;
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          console.log(`[payment] addebito tentativo ${attempt} ${reference} ${total}`);
-          charge = await this.payments.charge(total, reference, body.card);
-
-          console.log(`[payment] esito ${charge.approved ? 'approvato' : 'rifiutato'} ${charge.id}`);
-          break;
-        } catch (err) {
-          if (err instanceof PaymentTimeoutError && attempt < 3) {
-            console.log('[payment] timeout, riprovo');
-            continue;
-          }
-          console.log('[payment] errore', err);
-          throw new ServiceUnavailableException('servizio di pagamento non disponibile');
-        }
+      try {
+        charge = await this.payments.charge(total, reference, body.card);
+      } catch (err) {
+        console.log('[payment] errore', err);
+        throw new ServiceUnavailableException('servizio di pagamento non disponibile');
       }
       if (!charge!.approved) throw new HttpException('pagamento rifiutato', 402);
     }
@@ -148,21 +138,11 @@ export class OrdersController {
     const venue = this.venues.findById(event.venueId)!;
 
     if (order.paymentId) {
-      let done = false;
-      for (let attempt = 1; attempt <= 2 && !done; attempt++) {
-        try {
-          console.log(`[payment] rimborso tentativo ${attempt} ${order.paymentId}`);
-          await this.payments.refund(order.paymentId, order.total);
-          done = true;
-        } catch (err) {
-          if (err instanceof PaymentTimeoutError) {
-            console.log('[payment] timeout rimborso');
-            continue;
-          }
-          throw new ServiceUnavailableException('rimborso non riuscito');
-        }
-      }
-      if (!done) throw new ServiceUnavailableException('rimborso non riuscito');
+      try {
+        await this.payments.refund(order.paymentId, order.total);
+      } catch (err) {
+        throw new ServiceUnavailableException('rimborso non riuscito');
+      };
     }
 
     for (const it of order.items) {
