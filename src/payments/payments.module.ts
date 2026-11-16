@@ -6,6 +6,7 @@ import { PAYMENT_GATEWAY, PaymentGateway } from './payment-gateway';
 import { BetaGateway } from './beta-gateway';
 import { BetaPayments } from '../../vendor/beta-pay';
 import { RetryingGateway } from './retrying-gateway';
+import { LoggingGateway } from './logging-gateway';
 
 @Module({
   controllers: [AlphaWebhookController],
@@ -22,7 +23,7 @@ import { RetryingGateway } from './retrying-gateway';
           gateway = new AlphaGateway(alpha);
         }
 
-        return new RetryingGateway(gateway);
+        return new RetryingGateway(new LoggingGateway(gateway));
       }
     }
   ],
